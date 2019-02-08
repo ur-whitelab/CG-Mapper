@@ -1,4 +1,4 @@
-Peptide Dashboard
+CG Mapper
 =====
 
 
