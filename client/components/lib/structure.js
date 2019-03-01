@@ -1,5 +1,5 @@
 import {event, select} from 'd3-selection'
-import {forceSimulation, forceManyBody, forceLink} from 'd3-force'
+import {forceSimulation} from 'd3-force'
 import {drag} from 'd3-drag'
 import * as SmilesDrawer from 'smiles-drawer'
 
@@ -8,8 +8,8 @@ class StructureD3 {
     this.canvas = canvas
     this.smilesCanvas = smilesCanvas
     this.context = canvas.getContext('2d')
-    this.width = canvas.width
-    this.height = canvas.height
+    this.width = canvas.offsetWidth
+    this.height = canvas.offsetHeight
     this.selected = [[]]
     this.colorList = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
     this.selectionListener = selectionListener
@@ -25,8 +25,6 @@ class StructureD3 {
     this.drawer = new SmilesDrawer.Drawer(options)
 
     this.simulation = forceSimulation()
-      .force('link', forceLink().distance(this.width / 20))
-      .force('repel', forceManyBody().strength(-150).distanceMax(5))
 
     select(canvas)
       .call(drag()
@@ -50,10 +48,6 @@ class StructureD3 {
             this.selected[this.selectedParticle].splice(index, 1)
           this.selectionListener(event.subject.id)
         })
-        .on('drag', () => {
-          event.subject.fx = event.x
-          event.subject.fy = event.y
-        })
         .on('end', () => {
           if (!event.active) this.simulation.alphaTarget(0)
           event.subject.fx = null
@@ -67,53 +61,92 @@ class StructureD3 {
     this.update('')
   }
 
-  convertCoords (x, y) {
+  convertCoords (x, y, scale) {
     return {
-      x: x / this.drawer.canvasWrapper.drawingWidth * this.width,
-      y: y / this.drawer.canvasWrapper.drawingHeight * this.height * 0.4
+      x: (x + this.drawer.canvasWrapper.offsetX) * scale,
+      y: (y + this.drawer.canvasWrapper.offsetY) * scale
     }
+  }
+
+  /**
+   * Taken from Smiles Drawer so we can actually get the scale
+   * Scale the canvas based on vertex positions.
+   *
+   * @param {Vertex[]} vertices An array of vertices containing the vertices associated with the current molecule.
+   */
+  scale (vertices) {
+    // Figure out the final size of the image
+    let maxX = -Number.MAX_VALUE
+    let maxY = -Number.MAX_VALUE
+    let minX = Number.MAX_VALUE
+    let minY = Number.MAX_VALUE
+
+    for (var i = 0; i < vertices.length; i++) {
+      let p = vertices[i].position
+
+      if (maxX < p.x) maxX = p.x
+      if (maxY < p.y) maxY = p.y
+      if (minX > p.x) minX = p.x
+      if (minY > p.y) minY = p.y
+    }
+
+    // Add padding
+    var padding = this.drawer.canvasWrapper.opts.padding
+    maxX += padding
+    maxY += padding
+    minX -= padding
+    minY -= padding
+
+    var drawingWidth = maxX - minX
+    var drawingHeight = maxY - minY
+
+    var scaleX = this.canvas.offsetWidth / drawingWidth
+    var scaleY = this.canvas.offsetHeight / drawingHeight
+
+    var scale = (scaleX < scaleY) ? scaleX : scaleY
+    return scale
   }
 
   update (sequence) {
     if (!sequence)
       return
+    this.context.clearRect(0, 0, this.width, this.height)
+    this.sequence = sequence
     SmilesDrawer.parse(sequence, (tree) => {
       // Draw to the canvas
-      this.drawer.draw(tree, this.smilesCanvas, 'light', false)
+      this.drawer.draw(tree, this.canvas, 'light', false)
+      // recreate point scale, which is reset at this point
+      let scale = this.scale(this.drawer.graph.vertices)
       this.nodes = this.drawer.graph.vertices.map((v, i) => {
         let o = {name: v.value.element, id: i}
-        let p = this.convertCoords(v.position.x, v.position.y)
+        let p = this.convertCoords(v.position.x, v.position.y, scale)
         o['x'] = p.x
         o['y'] = p.y
+        console.log('Convreted ' + v.position.x + ' ' + p.x)
         return o
       })
-      this.links = this.drawer.graph.edges.map((e, i) => { return {source: e.sourceId, target: e.targetId} })
-      // keep data for existing nodes
-
-      // give new one a kick
-      if (this.nodes.length > 0)
-        this.nodes[this.nodes.length - 1].vx = 0.0
-
-      // remove selection if too big
-
-      // adjust drawing properties
-      // Have upper/lower bound for sizes
-      this.radius = Math.min(50, Math.max(10, 250 / (this.nodes.length + 1)))
-      this.simulation.force('repel').distanceMax(this.radius * 3)
-      this.context.font = `${Math.round(Math.max(10, 72 / Math.sqrt(1 + this.nodes.length)))}px sans-serif`
-
-      // update forces
-      this.simulation.nodes(this.nodes)
-      this.simulation.force('link').links(this.links)
-      this.simulation.force('link').distance(this.width / Math.min(this.nodes.length, 25))
-      this.simulation.alphaTarget(0.3).restart()
     })
+    this.links = this.drawer.graph.edges.map((e, i) => { return {source: e.sourceId, target: e.targetId} })
+    // keep data for existing nodes
+
+    // adjust drawing properties
+    // Have upper/lower bound for sizes
+    this.radius = Math.min(50, Math.max(10, 250 / (this.nodes.length + 1)))
+    this.context.font = `${Math.round(Math.max(10, 72 / Math.sqrt(1 + this.nodes.length)))}px sans-serif`
+
+    // update simulation nodes
+    this.simulation.nodes(this.nodes)
+    this.simulation.alphaTarget(0.3).restart()
+    this.drawNodes()
   }
 
   ticked () {
+    this.drawNodes()
+  }
+
+  drawNodes () {
     if (!this.nodes)
       return
-    this.context.clearRect(0, 0, this.width, this.height)
 
     this.context.beginPath()
     this.links.forEach((e) => {
