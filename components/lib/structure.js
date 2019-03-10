@@ -4,8 +4,9 @@ import {drag} from 'd3-drag'
 import * as SmilesDrawer from 'smiles-drawer'
 
 class StructureD3 {
-  constructor (canvas, smilesCanvas, selectionListener) {
+  constructor (canvas, smilesCanvas, selectionListener, smilesParseCallback) {
     this.canvas = canvas
+    this.smilesParseCallback = smilesParseCallback
     this.smilesCanvas = smilesCanvas
     this.context = canvas.getContext('2d')
     this.width = canvas.offsetWidth
@@ -61,6 +62,34 @@ class StructureD3 {
     this.update('')
   }
 
+  getMapping () {
+    // see if mapping includes all
+    this.nodes.forEach((n) => {
+      n['cg'] = -1
+    })
+    this.selected.forEach((a, i) => {
+      a.forEach((j) => {
+        this.nodes[j].cg = i
+      })
+    })
+    let valid = true
+    this.nodes.forEach((n) => {
+      valid = valid && n.cg >= 0
+    })
+    if (valid) {
+      // filter out forces/velocities which don't mean anything
+      let filtered = this.nodes.map((n) => {
+        return {'cg': n.cg, 'element': n.name, 'id': n.id}
+      })
+      let filteredCG = this.selected.map((s) => {
+        if (s.length > 0)
+          return s
+      })
+      return JSON.stringify({'cg-nodes': filteredCG, 'nodes': filtered, 'edges': this.edges, 'smiles': this.smiles})
+    }
+    return null
+  }
+
   convertCoords (x, y, scale) {
     return {
       x: (x + this.drawer.canvasWrapper.offsetX) * scale,
@@ -107,12 +136,12 @@ class StructureD3 {
     return scale
   }
 
-  update (sequence) {
-    if (!sequence)
+  update (smiles) {
+    if (!smiles)
       return
     this.context.clearRect(0, 0, this.width, this.height)
-    this.sequence = sequence
-    SmilesDrawer.parse(sequence, (tree) => {
+    this.smiles = smiles
+    SmilesDrawer.parse(smiles, (tree) => {
       // Draw to the canvas
       this.drawer.draw(tree, this.canvas, 'light', false)
       // recreate point scale, which is reset at this point
@@ -125,19 +154,26 @@ class StructureD3 {
         console.log('Convreted ' + v.position.x + ' ' + p.x)
         return o
       })
+
+      this.edges = this.drawer.graph.edges.map((e, i) => { return {source: e.sourceId, target: e.targetId} })
+
+      // adjust drawing properties
+      // Have upper/lower bound for sizes
+      this.radius = Math.min(50, Math.max(10, 250 / (this.nodes.length + 1)))
+      this.context.font = `${Math.round(Math.max(10, 72 / Math.sqrt(1 + this.nodes.length)))}px sans-serif`
+
+      // update simulation nodes
+      this.simulation.nodes(this.nodes)
+      this.simulation.alphaTarget(0.3).restart()
+      this.drawNodes()
+      this.smilesParseCallback(true)
+    }, () => {
+      // error callback
+      this.smilesParseCallback(false)
+      this.nodes = []
+      this.simulation.nodes(this.nodes)
+      this.context.clearRect(0, 0, this.width, this.height)
     })
-    this.links = this.drawer.graph.edges.map((e, i) => { return {source: e.sourceId, target: e.targetId} })
-    // keep data for existing nodes
-
-    // adjust drawing properties
-    // Have upper/lower bound for sizes
-    this.radius = Math.min(50, Math.max(10, 250 / (this.nodes.length + 1)))
-    this.context.font = `${Math.round(Math.max(10, 72 / Math.sqrt(1 + this.nodes.length)))}px sans-serif`
-
-    // update simulation nodes
-    this.simulation.nodes(this.nodes)
-    this.simulation.alphaTarget(0.3).restart()
-    this.drawNodes()
   }
 
   ticked () {
@@ -147,14 +183,6 @@ class StructureD3 {
   drawNodes () {
     if (!this.nodes)
       return
-
-    this.context.beginPath()
-    this.links.forEach((e) => {
-      this.context.moveTo(e.source.x, e.source.y)
-      this.context.lineTo(e.target.x, e.target.y)
-    })
-    this.context.strokeStyle = '#a7a4a4'
-    this.context.stroke()
 
     this.context.beginPath()
     this.nodes.forEach((d) => {

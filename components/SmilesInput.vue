@@ -1,6 +1,7 @@
 <template>
   <input id="smiles" class="input" spellcheck="false"
   autocorrect="off" type="text" placeholder="Smiles String"
+  v-bind:class="{'is-danger': !smilesValid && smiles.length > 0, 'is-success': smilesValid && smiles.length > 0}"
   v-model="internalSmiles" @keydown="onKeyDown" @keyup="lastKeyCode = 0">
 </template>
 
@@ -14,6 +15,9 @@ export default {
       pattern: 'acdefghiklmnopqrstuvwyACDEFGHIKLMNOPQRSTVWY.-=#*@$:/()',
       lastKeyCode: 0
     }
+  },
+  props: {
+    smilesValid: Boolean
   },
   mounted: function () {
     // convert pattern to list of integers
@@ -51,6 +55,6 @@ export default {
 <style lang="scss">
 @import "style/style.scss";
 #smiles {
-  font-family: $family-mono;  
+  font-family: $family-mono;
 }
 </style>

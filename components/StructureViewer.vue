@@ -18,11 +18,13 @@ export default {
   },
   data () {
     return {
-      sd3: null
+      sd3: null,
+      valid: false
     }
   },
   mounted: function () {
     this.updateCanvasSize()
+    this.$root.$on('download', this.download)
   },
   watch: {
     sequence: _.debounce(function () {
@@ -34,6 +36,9 @@ export default {
     },
     selectedParticle: function () {
       this.sd3.updateSelectedParticle(this.selectedParticle)
+    },
+    valid: function (v) {
+      this.$emit('smiles-valid-update', v)
     }
 
   },
@@ -44,13 +49,34 @@ export default {
         let ctx = this.$refs.sequenceGraph.getContext('2d')
         console.log('updated: ' + this.viewWidth + ' now ' + this.$refs.sequenceGraph.width + ' canvas ' + ctx.canvas.width)
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
-        if (!this.sd3)
-          this.sd3 = new StructureD3(this.$refs.sequenceGraph, this.smilesCanvas, (index) => { this.$emit('selection-update', index) })
-        else
+        if (!this.sd3) {
+          this.sd3 = new StructureD3(this.$refs.sequenceGraph,
+            this.smilesCanvas,
+            (index) => { this.$emit('selection-update', index) },
+            (v) => { this.valid = v })
+        } else
           this.sd3.width = this.viewWidth
 
         this.sd3.update(this.sequence)
       }
+    },
+    download: function () {
+      let map = this.sd3.getMapping()
+      if (map) {
+        this.$root.$emit('download-result', true)
+        let filename = 'cgmap.' + (new Date()).toISOString().slice(0, 10) + '.json'
+        let element = document.createElement('a')
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(map))
+        element.setAttribute('download', filename)
+
+        element.style.display = 'none'
+        document.body.appendChild(element)
+
+        element.click()
+
+        document.body.removeChild(element)
+      } else
+        this.$root.$emit('download-result', false)
     }
   }
 }

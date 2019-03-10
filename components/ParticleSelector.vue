@@ -14,6 +14,12 @@
         </li>
       </ul>
     </div>
+    <div class="field is-grouped">
+      <p class="control">
+        <button class="button" v-on:click="$root.$emit('download')" :disabled="!smilesValid">Download</button>
+      </p>
+      <p v-if="!downloadResult" class="help is-danger"> Incomplete Mapping </p>
+    </div>
   </div>
 </template>
 
@@ -27,8 +33,17 @@ export default {
           index: 0
         }
       ],
-      selected: 0
+      selected: 0,
+      downloadResult: true
     }
+  },
+  mounted: function () {
+    this.$root.$on('download-result', (v) => {
+      this.downloadResult = v
+    })
+  },
+  props: {
+    smilesValid: Boolean
   },
   methods: {
     addParticle: function () {
@@ -42,6 +57,9 @@ export default {
       this.$refs.nav.children[s].style['background-color'] = colorList[s]
       this.$emit('selected-update', s)
       this.selected = s
+    },
+    download: function () {
+      this.$emit('download-mapping')
     }
   }
 }

@@ -7,7 +7,7 @@
           <h1 class="is-size-4 is-spaced bd-anchor-title">Enter Smiles</h1>
           <div class="field has-addons">
             <div ref="sequencecontainer" class="control is-expanded">
-              <smiles-input v-on:smiles-update="sequence = $event"> </smiles-input>
+              <smiles-input :smilesValid="smilesValid" v-on:smiles-update="sequence = $event"> </smiles-input>
             </div>
             <div class="control">
               <a class="button is-info">
@@ -20,12 +20,16 @@
     </div>
   </section>
   <section>
-    <particle-selector v-on:selected-update="selectedParticle = $event"></particle-selector>
+    <particle-selector :smilesValid="smilesValid" v-on:selected-update="selectedParticle = $event"></particle-selector>
   </section>
     <section class="hero is-primary  is-bold">
     <div class="hero-body" style="padding: 0px;">
       <div class="container">
-        <structure-viewer :selectedParticle="selectedParticle ":sequence="sequence" smiles-canvas="smiles-canvas" :view-width="viewWidth" v-on:selection-update="selectedIndex = $event"></structure-viewer>
+        <structure-viewer  v-on:smiles-valid-update="smilesValid = $event"
+          :selectedParticle="selectedParticle"
+          :sequence="sequence" smiles-canvas="smiles-canvas"
+          :view-width="viewWidth"
+          v-on:selection-update="selectedIndex = $event"></structure-viewer>
         <div class="container">
         </div>
       </div>
@@ -56,7 +60,8 @@ export default {
       sequence: '',
       selectedParticle: 0,
       viewWidth: 800,
-      selectedIndex: -1
+      selectedIndex: -1,
+      smilesValid: false
     }
   },
   mounted: function () {
