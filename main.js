@@ -8,5 +8,6 @@ new Vue({
   template: '<App/>',
   created: function () {
     this.$mount('#app')
+    this.$root.version = require('./package.json').version
   }
 })

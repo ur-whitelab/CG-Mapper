@@ -25,6 +25,7 @@ export default {
   mounted: function () {
     this.updateCanvasSize()
     this.$root.$on('download', this.download)
+    this.$root.$on('reset', this.resetMapping)
   },
   watch: {
     sequence: _.debounce(function () {
@@ -60,13 +61,19 @@ export default {
         this.sd3.update(this.sequence)
       }
     },
+    resetMapping: function () {
+      this.sd3.resetMapping()
+    },
     download: function () {
       let map = this.sd3.getMapping()
       if (map) {
         this.$root.$emit('download-result', true)
-        let filename = 'cgmap.' + (new Date()).toISOString().slice(0, 10) + '.json'
+        map.version = this.$root.version
+        // compute name
+        let name = map.smiles.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+        let filename = 'cgmap.' + name + '.' + map.cgnodes.length + '.json'
         let element = document.createElement('a')
-        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(map))
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(map)))
         element.setAttribute('download', filename)
 
         element.style.display = 'none'

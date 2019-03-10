@@ -15,10 +15,20 @@
       </ul>
     </div>
     <div class="field is-grouped">
+        <p class="control">
+        <button class="button" v-on:click="reset()">
+          Reset Mapping
+        </button>
+        </p>
       <p class="control">
-        <button class="button" v-on:click="$root.$emit('download')" :disabled="!smilesValid">Download</button>
+        <button class="button" v-on:click="$root.$emit('download')"
+        :disabled="!smilesValid">
+          Download
+          </button>
       </p>
-      <p v-if="!downloadResult" class="help is-danger"> Incomplete Mapping </p>
+      <p v-if="!downloadResult" class="help is-danger">
+        Incomplete Mapping
+        </p>
     </div>
   </div>
 </template>
@@ -60,6 +70,11 @@ export default {
     },
     download: function () {
       this.$emit('download-mapping')
+    },
+    reset: function () {
+      this.selected = 0
+      this.particles = [{index: 0}]
+      this.$root.$emit('reset')
     }
   }
 }

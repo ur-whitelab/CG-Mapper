@@ -67,7 +67,8 @@ class StructureD3 {
     this.nodes.forEach((n) => {
       n['cg'] = -1
     })
-    this.selected.forEach((a, i) => {
+    let filteredCG = this.selected.filter((s) => s.length > 0)
+    filteredCG.forEach((a, i) => {
       a.forEach((j) => {
         this.nodes[j].cg = i
       })
@@ -81,13 +82,15 @@ class StructureD3 {
       let filtered = this.nodes.map((n) => {
         return {'cg': n.cg, 'element': n.name, 'id': n.id}
       })
-      let filteredCG = this.selected.map((s) => {
-        if (s.length > 0)
-          return s
-      })
-      return JSON.stringify({'cg-nodes': filteredCG, 'nodes': filtered, 'edges': this.edges, 'smiles': this.smiles})
+      return {'cgnodes': filteredCG, 'nodes': filtered, 'edges': this.edges, 'smiles': this.smiles}
     }
     return null
+  }
+
+  resetMapping () {
+    this.selected = [[]]
+    this.selectedParticle = 0
+    this.drawNodes()
   }
 
   convertCoords (x, y, scale) {
@@ -151,7 +154,6 @@ class StructureD3 {
         let p = this.convertCoords(v.position.x, v.position.y, scale)
         o['x'] = p.x
         o['y'] = p.y
-        console.log('Convreted ' + v.position.x + ' ' + p.x)
         return o
       })
 

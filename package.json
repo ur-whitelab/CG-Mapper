@@ -1,6 +1,6 @@
 {
   "name": "cg-mapper",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "Asses CG Mapping",
   "main": "index.js",
   "scripts": {
