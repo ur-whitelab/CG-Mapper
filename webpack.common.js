@@ -8,7 +8,7 @@ const config = {
   entry: './main.js',
   context: __dirname,
   output: {
-    path: path.resolve(__dirname, '../static'),
+    path: path.resolve(__dirname, './static'),
     filename: 'bundle.js'
   },
   resolve: {
@@ -90,7 +90,7 @@ const config = {
         ? path.resolve(__dirname, 'node_modules')
         : false
     }),
-    new CleanWebpackPlugin('../static')
+    new CleanWebpackPlugin('./static')
   ]
 }
 module.exports = config
