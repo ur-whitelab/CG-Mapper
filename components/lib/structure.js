@@ -157,7 +157,7 @@ class StructureD3 {
         return o
       })
 
-      this.edges = this.drawer.graph.edges.map((e, i) => { return {source: e.sourceId, target: e.targetId} })
+      this.edges = this.drawer.graph.edges.map((e, i) => { return {source: e.sourceId, target: e.targetId, bondtype: e.bondType} })
 
       // adjust drawing properties
       // Have upper/lower bound for sizes
