@@ -62,7 +62,7 @@ export default {
       })
     },
     updateSelected: function (s) {
-      let colorList = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+      let colorList = ['#FD3216', '#00FE35', '#6A76FC', '#FED4C4', '#FE00CE', '#0DF9FF', '#F6F926', '#FF9616', '#479B55', '#EEA6FB', '#DC587D', '#D626FF', '#6E899C', '#00B5F7', '#B68E00', '#C9FBE5', '#FF0092', '#22FFA7', '#E3EE9E', '#86CE00', '#BC7196', '#7E7DCD', '#FC6955', '#E48F72']
       this.$refs.nav.children[this.selected].style['background-color'] = ''
       this.$refs.nav.children[s].style['background-color'] = colorList[s]
       this.$emit('selected-update', s)
